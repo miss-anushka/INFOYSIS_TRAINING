@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aadhaar Fraud Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(to right, #000000, #1a1a1a);
+            background-size: 200% 100%;
+            animation: gradientMove 3s infinite alternate;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+            height: 100vh;
+            overflow: auto; /* Allow scrolling */
+        }
+
+        @keyframes gradientMove {
+            0% {
+                background-position: 0% 50%;
+            }
+            100% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .content-container {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .custom-file-input {
+            display: none;
+        }
+
+        .custom-file-label {
+            display: block;
+            background-color: #343a40;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .custom-file-label:hover {
+            background-color: #28a745;
+        }
+
+        .btn-primary,
+        .btn-success {
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-primary:hover,
+        .btn-success:hover {
+            transform: scale(1.05);
+        }
+
+        .btn-success {
+            background-color: #28a745;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th {
+            background-color: #6c757d;
+            color: white;
+            padding: 10px;
+            text-align: left;
+        }
+
+        td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        tr:hover {
+            background-color: #444;
+        }
+
+        td, th {
+            border: none;
+        }
+
+        .star {
+            position: absolute;
+            border-radius: 50%;
+            background-color: white;
+            animation: twinkle 1.5s infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% {
+                opacity: 0.3;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .moon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 80px;
+            height: 80px;
+            background: #f2f2f2;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+        }
+
+        .moon:before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 70px;
+            height: 70px;
+            background: #101010;
+            border-radius: 50%;
+        }
+
+        .sparkle {
+            position: absolute;
+            background-color: rgba(255, 255, 255, 0.8);
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            animation: sparkle 1s infinite;
+        }
+
+        @keyframes sparkle {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.5);
+                opacity: 0.6;
+            }
+            100% {
+                transform: scale(0);
+                opacity: 0;
+            }
+        }
+
+        .moon .sparkle1 { top: 15px; left: 25px; animation-delay: 0s; }
+        .moon .sparkle2 { top: 25px; left: 50px; animation-delay: 0.2s; }
+        .moon .sparkle3 { top: 35px; left: 35px; animation-delay: 0.4s; }
+        .moon .sparkle4 { top: 40px; left: 20px; animation-delay: 0.6s; }
+        .moon .sparkle5 { top: 30px; left: 60px; animation-delay: 0.8s; }
+    </style>
+</head>
+<body>
+    <div class="container d-flex justify-content-center align-items-center">
+        <div class="content-container">
+            <h1>Aadhaar Fraud Management System</h1>
+            <form id="upload-form" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="zipfile" class="form-label">Upload ZIP File</label>
+                    <div class="custom-file">
+                        <input type="file" class="custom-file-input" name="zipfile" id="zipfile" required>
+                        <label class="custom-file-label" for="zipfile">Choose ZIP file</label>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="excelfile" class="form-label">Upload Excel File</label>
+                    <div class="custom-file">
+                        <input type="file" class="custom-file-input" name="excelfile" id="excelfile" required>
+                        <label class="custom-file-label" for="excelfile">Choose Excel file</label>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </form>
+
+            <div class="container mt-5">
+                <button class="btn btn-success" onclick="downloadResults()">Download Results</button>
+            </div>
+            <div id="results" class="mt-4"></div>
+            <div id="image-container" class="mt-4"></div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('#upload-form').on('submit', function(e) {
+                e.preventDefault();
+                var formData = new FormData(this);
+                $.ajax({
+                    url: '/upload',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        if (response.results) {
+                            var headers = Object.keys(response.results[0]);
+
+                            var resultHtml = '<h3>Processed Results</h3><table class="table"><thead><tr>';
+                            headers.forEach(function(header) {
+                                resultHtml += '<th>' + header + '</th>';
+                            });
+                            resultHtml += '</tr></thead><tbody>';
+                            response.results.forEach(function(row) {
+                                resultHtml += '<tr>';
+                                headers.forEach(function(header) {
+                                    resultHtml += '<td>' + row[header] + '</td>';
+                                });
+                                resultHtml += '</tr>';
+                            });
+                            resultHtml += '</tbody></table>';
+                            $('#results').html(resultHtml);
+
+                            // Display an image
+                            var imgHtml = "<img src='{{ url_for('static', filename='image.png') }}' alt='Placeholder' class='img-fluid mt-3'>";
+                            $('#image-container').html(imgHtml);
+                        } else {
+                            $('#results').html('<p>No results found.</p>');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error(xhr.responseText);
+                        alert('Error: ' + error);
+                    }
+                });
+            });
+        });
+
+        function downloadResults() {
+            window.location.href = '/download';
+        }
+
+        const numStars = 100;
+        const body = document.body;
+
+        function generateStars() {
+            for (let i = 0; i < numStars; i++) {
+                let star = document.createElement('div');
+                star.classList.add('star');
+                star.style.width = Math.random() * 3 + 'px';
+                star.style.height = star.style.width;
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDuration = Math.random() * 1.5 + 1 + 's';
+                body.appendChild(star);
+            }
+        }
+
+        generateStars();
+    </script>
+
+    <div class="moon">
+        <div class="sparkle sparkle1"></div>
+        <div class="sparkle sparkle2"></div>
+        <div class="sparkle sparkle3"></div>
+        <div class="sparkle sparkle4"></div>
+        <div class="sparkle sparkle5"></div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Fraud Detection System</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: #101010;
+            overflow: hidden;
+            flex-direction: column; /* Align items vertically */
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            margin-bottom: 30px; /* Space between header and atom */
+        }
+
+        .atom {
+            position: relative;
+            width: 200px;
+            height: 200px;
+        }
+
+        .center {
+            width: 30px;
+            height: 30px;
+            background: orange;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px orange, 0 0 50px orange;
+        }
+
+        .orbit {
+            position: absolute;
+            top: 20%;
+            left: 0%;
+            translate: -50%, -50%;
+            border-radius: 50%;
+            border: 1px dashed rgba(255, 255, 255, 0.3);
+            transform-style: preserve-3d;
+            animation: rotate 3s linear infinite;
+        }
+
+        .orbit1 {
+            width: 200px;
+            height: 120px;
+            transform: translate(-50%, -50%) rotateX(45deg);
+        }
+
+        .orbit2 {
+            width: 200px;
+            height: 120px;
+            transform: translate(-50%, -50%) rotateX(-45deg);
+            animation-duration: 5s;
+        }
+
+        .orbit3 {
+            width: 200px;
+            height: 120px;
+            transform: translate(-50%, -50%) rotateY(90deg);
+            animation-duration: 10s;
+        }
+
+        .electron {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px cyan, 0 0 30px cyan;
+        }
+
+        .electron1 {
+            background: rgba(0, 150, 255);
+        }
+
+        .electron2 {
+            background: rgba(0, 0, 255);
+        }
+
+        .electron3 {
+            background: rgba(255, 0, 255);
+        }
+
+        @keyframes rotate {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Styling for the button */
+        .footer {
+            margin-top: 30px; /* Space between atom and button */
+        }
+
+        .try-button {
+            background-color: #ff5722;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .try-button:hover {
+            background-color: #e64a19; /* Darker shade on hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="header">AI Fraud Detection System</div>
+    <div class="atom">
+        <div class="center"></div>
+        <div class="orbit orbit1">
+            <div class="electron electron1"></div>
+        </div>
+        <div class="orbit orbit2">
+            <div class="electron electron2"></div>
+        </div>
+        <div class="orbit orbit3">
+            <div class="electron electron3"></div>
+        </div>
+    </div>
+    <div class="footer">
+        <!-- Using Flask's url_for to ensure proper routing -->
+        <a href="{{ url_for('index') }}">
+            <button class="try-button">Try it Out</button>
+        </a>
+    </div>
+</body>
+</html>
