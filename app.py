@@ -14,11 +14,11 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 app.config['RESULTS_FOLDER'] = 'results/'
 
-classifier = YOLO("/Users/anushkamishra/runs/classify/train7/weights/best.pt")
+classifier = YOLO("/Users/anushkamishra/runs/classify/train3/weights/best.pt")
 detector = YOLO("/Users/anushkamishra/runs/detect/train3/weights/best.pt")
 reader = Reader(['en'])
 
-# Initialize the database
+# SQLite DB initialization
 def init_db():
     with sqlite3.connect("results.db") as conn:
         cursor = conn.cursor()
@@ -33,7 +33,6 @@ def init_db():
         ''')
         conn.commit()
 
-# Insert data into the database
 def insert_into_db(name, address, uid, is_aadhaar):
     with sqlite3.connect("results.db") as conn:
         cursor = conn.cursor()
@@ -43,7 +42,6 @@ def insert_into_db(name, address, uid, is_aadhaar):
         )
         conn.commit()
 
-# Process uploaded images
 def process_image(image_path):
     if classifier.predict(image_path)[0].probs.numpy().top1 == 0:
         fields = detector(image_path)
@@ -59,20 +57,19 @@ def process_image(image_path):
         return extracted_data
     return None
 
-# Normalize text for matching
+# Helper Functions
 def normalize_text(text):
     if not text:
         return "text empty"
     text = re.sub(r"[^\w\s]", "", text)
     return " ".join(text.split()).lower()
 
-# Calculate match score using fuzzy logic
 def calculate_match_score(input_value, extracted_value):
     if pd.isna(input_value) or pd.isna(extracted_value):
         return 0
     return fuzz.ratio(str(input_value), str(extracted_value))
 
-# Match name logic
+
 def name_match(input_name, extracted_name):
     if extracted_name is None:
         return False
@@ -100,26 +97,28 @@ def name_match(input_name, extracted_name):
             return False
     return True
 
-# Address matching logic
+
 def address_match(input_address, extracted_address):
     if input_address is None or extracted_address is None:
         return False, 0.0, {}
 
+    # Handle input_address if it's a Series
     if isinstance(input_address, pd.Series):
         input_address = input_address.to_dict()
-
+    
     extracted_address = normalize_text(extracted_address)
     final_score = 0
     weights = {
         "State": 0.2,
         "Landmark": 0.2,
         "Premise Building Name": 0.2,
-        "City": 0.2,
-        "Street Road Name": 0.1,
+        "City":0.2,
+        "Street Road Name":0.1,
         "Floor Number": 0.05,
         "House Flat Number": 0.05
     }
     tokens = extracted_address.split(" ")
+    # Component matching logic
     for field, weight in weights.items():
         input_value = input_address.get(field, "")
         match_score = fuzz.token_set_ratio(normalize_text(input_value), extracted_address) if input_value else 0
@@ -131,13 +130,9 @@ def address_match(input_address, extracted_address):
 
     return final_score >= 70 and pincode_matched, final_score, input_address
 
-# Compare data between input and extracted values
+
 def compare_data(input_data, json_data):
     excel_data = input_data.copy()
-    excel_data['Accepted/Rejected'] = ""
-    excel_data['Document Type'] = ""
-    excel_data['Final Remarks'] = ""
-
     for idx, row in excel_data.iterrows():
         serial_no = row.get("SrNo")
         uid = row.get("UID")
@@ -147,32 +142,80 @@ def compare_data(input_data, json_data):
             extracted_uid = extracted.get("uid", "").replace(" ", "")
             extracted_name = extracted.get("name", "")
             extracted_address = extracted.get("address", "")
-            is_aadhaar = uid == extracted_uid and name_match(row.get("Name"), extracted_name) and address_match(row, extracted_address)[0]
+            row['Extracted UID'] = extracted_uid
+            row['Extracted Name'] = extracted_name
+            row['Extracted Address'] = extracted_address
+            # UID Match
+            uid_match = uid == extracted_uid
+            uid_score = 100 if uid_match else 0
+            row['UID Match Score'] = uid_score
 
-            insert_into_db(extracted_name, extracted_address, extracted_uid, is_aadhaar)
+            # Name Match
+            name_match_result = name_match(row.get("Name"), extracted_name)
+            name_score = calculate_match_score(row.get("Name"), extracted_name)
+            row['Name Match Score'] = name_score
+            row['Name Match Percentage'] = name_score
 
-            row['UID Match Score'] = 100 if uid == extracted_uid else 0
-            row['Name Match Score'] = calculate_match_score(row.get("Name"), extracted_name)
-            address_match_result, address_score, _ = address_match(row, extracted_address)
-            row['Final Remarks'] = "All matched" if is_aadhaar else "Mismatch"
-            row['Document Type'] = "Aadhaar" if is_aadhaar else "Non-Aadhaar"
-            row['Accepted/Rejected'] = "Accepted" if is_aadhaar else "Rejected"
+            # Address Match
+            address_match_result, address_score, partial_scores = address_match(row, extracted_address)
+            if partial_scores:
+                row['House Flat Number Match Score'] = partial_scores['House Flat Number Match Score']
+                row['Street Road Name Match Score'] = partial_scores['Street Road Name Match Score']
+                row['City Match Score'] = partial_scores['City Match Score']
+                row['Floor Number Match Score'] = partial_scores['Floor Number Match Score']
+                row['Premise Building Name Match Score'] = partial_scores['Premise Building Name Match Score']
+                row['Landmark Match Score'] = partial_scores['Landmark Match Score']
+                row['State Match Score'] = partial_scores['State Match Score']
+                row['Final Address Match'] = address_match_result
+                row['Final Address Match Score'] = address_score
+                row['PINCODE Match Score'] = partial_scores['PINCODE Match Score']
+            
+            # Final Match
+            overall_match = uid_match and name_match_result and address_match_result
+
+            row['Overall Match'] = overall_match
+
+            if overall_match:
+                row['Final Remarks'] = "All matched"
+            elif not uid_match:
+                row['Final Remarks'] = "UID mismatch"
+            elif not name_match_result:
+                row['Final Remarks'] = "Name mismatch"
+            elif not address_match_result:
+                row['Final Remarks'] = "Address mismatch"
+            else:
+                if extracted_address is None:
+                    row['Final Remarks'] = "Address missing in aadhar"
+                elif extracted_name is None:
+                    row['Final Remarks'] = "Name missing in aadhar"
+                else:
+                    row['Final Remarks'] = "Non Aadhar"
+
+            row["Document Type"] = "Aadhaar" if overall_match else "Non-Aadhaar"
+
+            # Insert data into the database
+            insert_into_db(extracted_name, extracted_address, extracted_uid, overall_match)
 
         else:
+            row.replace(float('nan'), 0)
             row['Final Remarks'] = "Non Aadhar"
             row['Document Type'] = "Non Aadhar"
-            row['Accepted/Rejected'] = "Rejected"
 
         excel_data.loc[idx] = row
     return excel_data
 
+@app.route('/download', methods=['GET'])
+def download_results():
+    file_path = os.path.join(app.config['RESULTS_FOLDER'], 'results.xlsx')
+    return send_file(file_path, as_attachment=True)
+
 @app.route('/')
 def home():
-    return render_template('front_page.html')
+    return render_template('front_page.html')  # Load front page first
 
 @app.route('/index')
 def index():
-    return render_template('index.html')
+    return render_template('index.html')  # Load index page on button click
 
 @app.route('/upload', methods=['POST'])
 def upload_files():
@@ -180,11 +223,13 @@ def upload_files():
         zip_file = request.files['zipfile']
         excel_file = request.files['excelfile']
 
+        # Save files
         zip_path = os.path.join(app.config['UPLOAD_FOLDER'], zip_file.filename)
         excel_path = os.path.join(app.config['UPLOAD_FOLDER'], excel_file.filename)
         zip_file.save(zip_path)
         excel_file.save(excel_path)
 
+        # Unzip and process images
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(app.config['UPLOAD_FOLDER'])
 
@@ -194,27 +239,27 @@ def upload_files():
         for image_path in image_paths:
             file_name = os.path.basename(image_path)
             key = file_name.split('.')[0][:3]
-            extracted_data = process_image(image_path)
-
-            if extracted_data:
-                if key in processed_results:
-                    processed_results[key] = {**processed_results[key], **extracted_data}
-                else:
+            if key not in processed_results:  # Check if key already exists
+                extracted_data = process_image(image_path)
+                if extracted_data:
                     processed_results[key] = extracted_data
 
+        # Read Excel and compare data
         df = pd.read_excel(excel_path)
         df = df.astype('str')
         comparison_results = compare_data(df, processed_results)
+        comparison_results['Accepted/Rejected'] = np.where(comparison_results['Final Remarks'] == 'All matched', 'Accepted', 'Rejected')
 
-        results_to_display = comparison_results[['SrNo', 'Accepted/Rejected', 'Document Type', 'Final Remarks']]
-        results_file_path = os.path.join(app.config['RESULTS_FOLDER'], 'results.xlsx')
+        # Save results to a new Excel file
+        results_df = pd.DataFrame(comparison_results)
         os.makedirs(app.config['RESULTS_FOLDER'], exist_ok=True)
-        results_to_display.to_excel(results_file_path, index=False)
+        results_file_path = os.path.join(app.config['RESULTS_FOLDER'], 'results.xlsx')
+        results_df.to_excel(results_file_path, index=False)
 
-        return jsonify({"message": "Files processed successfully!", "results": results_to_display.to_dict(orient='records')})
+        return jsonify({"message": "Files processed successfully!", "results": comparison_results[['SrNo', 'Document Type', 'Accepted/Rejected', 'Final Remarks']].to_dict(orient='records')})
 
     return jsonify({"error": "Both files are required."}), 400
 
 if __name__ == '__main__':
-    init_db()
+    init_db()  # Initialize the database when the app starts
     app.run(debug=True)
