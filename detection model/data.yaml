@@ -1,0 +1,9 @@
+path: '/Users/anushkamishra/Desktop/INFOYSIS TRAINING/detection_model/data.yaml'
+train: '/Users/anushkamishra/Desktop/INFOYSIS TRAINING/detection_model/dataset/dataset/dataset/images/train'
+val: '/Users/anushkamishra/Desktop/INFOYSIS TRAINING/detection_model/dataset/dataset/dataset/images/val'
+
+
+names:
+  0: name
+  1: uid
+  2: address
