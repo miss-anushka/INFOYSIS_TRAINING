@@ -15,7 +15,8 @@
             color: white;
             font-family: 'Poppins', sans-serif;
             height: 100vh;
-            overflow: auto; /* Allow scrolling */
+            overflow: overflow; 
+            position: relative;
         }
 
         @keyframes gradientMove {
@@ -32,7 +33,8 @@
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-top: 20px;
+            position: relative;
+            z-index: 10;
         }
 
         h1 {
@@ -40,6 +42,7 @@
             font-weight: 600;
         }
 
+        /* Fancy file input */
         .custom-file-input {
             display: none;
         }
@@ -60,24 +63,37 @@
             background-color: #28a745;
         }
 
+        /* Custom upload and download buttons */
         .btn-primary,
         .btn-success {
+            background-color: #007bff;
+            border-color: #007bff;
             padding: 10px 20px;
             border-radius: 5px;
             font-size: 16px;
+            text-transform: uppercase;
             font-weight: 600;
-            transition: transform 0.3s ease;
+            transition: background-color 0.3s ease, transform 0.3s ease;
         }
 
         .btn-primary:hover,
         .btn-success:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
             transform: scale(1.05);
         }
 
         .btn-success {
             background-color: #28a745;
+            border-color: #28a745;
         }
 
+        .btn-success:hover {
+            background-color: #218838;
+            border-color: #218838;
+        }
+
+        /* Table styling */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -101,9 +117,10 @@
         }
 
         td, th {
-            border: none;
+            border: none; /* No borders */
         }
 
+        /* Starry background styling */
         .star {
             position: absolute;
             border-radius: 50%;
@@ -120,6 +137,7 @@
             }
         }
 
+        /* Moon Styling */
         .moon {
             position: absolute;
             top: 20px;
@@ -129,6 +147,8 @@
             background: #f2f2f2;
             border-radius: 50%;
             box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+            overflow: hidden;
+            z-index: 100; /* Ensure moon stays on top */
         }
 
         .moon:before {
@@ -142,6 +162,7 @@
             border-radius: 50%;
         }
 
+        /* Sparkles Animation */
         .sparkle {
             position: absolute;
             background-color: rgba(255, 255, 255, 0.8);
@@ -166,15 +187,17 @@
             }
         }
 
+        /* Position multiple sparkles */
         .moon .sparkle1 { top: 15px; left: 25px; animation-delay: 0s; }
         .moon .sparkle2 { top: 25px; left: 50px; animation-delay: 0.2s; }
         .moon .sparkle3 { top: 35px; left: 35px; animation-delay: 0.4s; }
         .moon .sparkle4 { top: 40px; left: 20px; animation-delay: 0.6s; }
         .moon .sparkle5 { top: 30px; left: 60px; animation-delay: 0.8s; }
+
     </style>
 </head>
 <body>
-    <div class="container d-flex justify-content-center align-items-center">
+    <div class="container mt-5 d-flex justify-content-center align-items-center" style="min-height: 100vh;">
         <div class="content-container">
             <h1>Aadhaar Fraud Management System</h1>
             <form id="upload-form" enctype="multipart/form-data">
@@ -198,8 +221,13 @@
             <div class="container mt-5">
                 <button class="btn btn-success" onclick="downloadResults()">Download Results</button>
             </div>
+            <script>
+                function downloadResults() {
+                    window.location.href = '/download';
+                }
+            </script>
+
             <div id="results" class="mt-4"></div>
-            <div id="image-container" class="mt-4"></div>
         </div>
     </div>
 
@@ -207,6 +235,7 @@
         $(document).ready(function() {
             $('#upload-form').on('submit', function(e) {
                 e.preventDefault();
+    
                 var formData = new FormData(this);
                 $.ajax({
                     url: '/upload',
@@ -217,53 +246,55 @@
                     success: function(response) {
                         if (response.results) {
                             var headers = Object.keys(response.results[0]);
-
+    
                             var resultHtml = '<h3>Processed Results</h3><table class="table"><thead><tr>';
-                            headers.forEach(function(header) {
-                                resultHtml += '<th>' + header + '</th>';
-                            });
+                            for (var i = headers.length - 1; i >= 0; i--) {
+                                resultHtml += '<th>' + headers[i] + '</th>';
+                            }
                             resultHtml += '</tr></thead><tbody>';
+    
                             response.results.forEach(function(row) {
                                 resultHtml += '<tr>';
-                                headers.forEach(function(header) {
-                                    resultHtml += '<td>' + row[header] + '</td>';
-                                });
+                                for (var i = headers.length - 1; i >= 0; i--) {
+                                    resultHtml += '<td>' + row[headers[i]] + '</td>';
+                                }
                                 resultHtml += '</tr>';
                             });
                             resultHtml += '</tbody></table>';
+    
                             $('#results').html(resultHtml);
+    
+                            // Show the download button
+                            $('.btn-success').addClass('visible');
 
-                            // Display an image
-                            var imgHtml = "<img src='{{ url_for('static', filename='image.png') }}' alt='Placeholder' class='img-fluid mt-3'>";
-                            $('#image-container').html(imgHtml);
+                            // Add the image dynamically after the table
+                            var imgHtml = '<div class="text-center mt-4"><img src="{{ url_for("static", filename="image.png") }}" alt="Image" class="img-fluid"></div>';
+                            $('#results').append(imgHtml);
                         } else {
                             $('#results').html('<p>No results found.</p>');
                         }
                     },
                     error: function(xhr, status, error) {
-                        console.error(xhr.responseText);
+                        console.log(xhr.responseText);
                         alert('Error: ' + error);
                     }
                 });
             });
         });
 
-        function downloadResults() {
-            window.location.href = '/download';
-        }
-
-        const numStars = 100;
+        // Generate stars dynamically
+        const numStars = 100; // Number of stars
         const body = document.body;
 
         function generateStars() {
             for (let i = 0; i < numStars; i++) {
                 let star = document.createElement('div');
                 star.classList.add('star');
-                star.style.width = Math.random() * 3 + 'px';
+                star.style.width = Math.random() * 3 + 'px'; // Random size
                 star.style.height = star.style.width;
-                star.style.left = Math.random() * 100 + '%';
-                star.style.top = Math.random() * 100 + '%';
-                star.style.animationDuration = Math.random() * 1.5 + 1 + 's';
+                star.style.left = Math.random() * 100 + '%'; // Random position
+                star.style.top = Math.random() * 100 + '%'; // Random position
+                star.style.animationDuration = Math.random() * 1.5 + 1 + 's'; // Random animation speed
                 body.appendChild(star);
             }
         }
@@ -271,6 +302,7 @@
         generateStars();
     </script>
 
+    <!-- Moon with Sparkles -->
     <div class="moon">
         <div class="sparkle sparkle1"></div>
         <div class="sparkle sparkle2"></div>
@@ -278,5 +310,6 @@
         <div class="sparkle sparkle4"></div>
         <div class="sparkle sparkle5"></div>
     </div>
+
 </body>
 </html>
